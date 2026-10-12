@@ -69,6 +69,8 @@ skill 和 rule 用 `teamai push`。`docs/`、`hooks/hooks.yaml`、`mcp/mcp.yaml`
 
 ## 角色和项目
 
+`knowledge` 包含 rules 和共享指令（`claudemd/`）。项目还可以单独声明 learnings、env、hooks、mcp、models、docs、wiki。
+
 ```yaml
 # manifest/roles.yaml
 version: 1
@@ -76,7 +78,7 @@ roles:
   - id: frontend
     description: Web engineers
     resources:
-      knowledge: [common, frontend]
+      knowledge: [common, frontend]  # rules/<ns>/、claudemd/<ns>/
       skills: [common, frontend]
       agents: [common, frontend]
 ```
@@ -88,17 +90,29 @@ projects:
   - id: checkout
     name: Checkout service
     resources:
-      knowledge: [checkout]
+      knowledge: [checkout]   # rules/checkout/、claudemd/checkout/
       skills: [checkout]
       learnings: [checkout]
       agents: [checkout]
+      env: [checkout]          # env/checkout/env.yaml
+      hooks: [checkout]        # hooks/checkout/hooks.yaml
+      mcp: [checkout]          # mcp/checkout/mcp.yaml
+      models: [checkout]       # models/checkout/models.yaml
+      docs: [checkout]         # docs/checkout/
+      wiki: [checkout]         # 代码库 slug，evidence/code/checkout/
 ```
 
 ```text
-skills/common/code-review/SKILL.md
+rules/common/code-style.md
+claudemd/frontend/api.md
 skills/frontend/react-patterns/SKILL.md
-skills/checkout/
+agents/frontend/reviewer.yaml
 learnings/checkout/
+env/checkout/env.yaml
+hooks/checkout/hooks.yaml
+mcp/checkout/mcp.yaml
+models/checkout/models.yaml
+docs/checkout/
 ```
 
 把这两份文件提交。在项目里：

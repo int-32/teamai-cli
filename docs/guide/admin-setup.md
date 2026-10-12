@@ -69,6 +69,8 @@ Teammates push branches and open pull requests. The default branch stays protect
 
 ## Roles and projects
 
+`knowledge` covers rules and shared instructions (`claudemd/`). A project can also declare learnings, env, hooks, mcp, models, docs, and wiki on its own.
+
 ```yaml
 # manifest/roles.yaml
 version: 1
@@ -76,7 +78,7 @@ roles:
   - id: frontend
     description: Web engineers
     resources:
-      knowledge: [common, frontend]
+      knowledge: [common, frontend]  # rules/<ns>/, claudemd/<ns>/
       skills: [common, frontend]
       agents: [common, frontend]
 ```
@@ -88,17 +90,29 @@ projects:
   - id: checkout
     name: Checkout service
     resources:
-      knowledge: [checkout]
+      knowledge: [checkout]   # rules/checkout/, claudemd/checkout/
       skills: [checkout]
       learnings: [checkout]
       agents: [checkout]
+      env: [checkout]          # env/checkout/env.yaml
+      hooks: [checkout]        # hooks/checkout/hooks.yaml
+      mcp: [checkout]          # mcp/checkout/mcp.yaml
+      models: [checkout]       # models/checkout/models.yaml
+      docs: [checkout]         # docs/checkout/
+      wiki: [checkout]         # codebase slug, evidence/code/checkout/
 ```
 
 ```text
-skills/common/code-review/SKILL.md
+rules/common/code-style.md
+claudemd/frontend/api.md
 skills/frontend/react-patterns/SKILL.md
-skills/checkout/
+agents/frontend/reviewer.yaml
 learnings/checkout/
+env/checkout/env.yaml
+hooks/checkout/hooks.yaml
+mcp/checkout/mcp.yaml
+models/checkout/models.yaml
+docs/checkout/
 ```
 
 Commit both files. In the project:
