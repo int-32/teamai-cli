@@ -69,6 +69,10 @@ skill 和 rule 用 `teamai push`。`docs/`、`hooks/hooks.yaml`、`mcp/mcp.yaml`
 
 ## 角色和项目
 
+角色是成员的分工，比如前端。设成这个角色的人，会收到角色上声明的资源。
+
+项目是正在做的服务。在当前目录设成这个项目后，会再收到项目上声明的资源。
+
 `knowledge` 包含 rules 和共享指令（`claudemd/`）。项目还可以单独声明 learnings、env、hooks、mcp、models、docs、wiki。
 
 ```yaml

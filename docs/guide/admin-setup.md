@@ -69,6 +69,10 @@ Teammates push branches and open pull requests. The default branch stays protect
 
 ## Roles and projects
 
+A role is a member's job, such as frontend. Someone who sets that role receives the resources the role lists.
+
+A project is the service they are working on. After this directory is set to that project, it also receives the resources the project lists.
+
 `knowledge` covers rules and shared instructions (`claudemd/`). A project can also declare learnings, env, hooks, mcp, models, docs, and wiki on its own.
 
 ```yaml
