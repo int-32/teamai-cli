@@ -15,7 +15,6 @@
 - [Dashboard](guide/zh-CN/dashboard.md) — 本地看板与会话存档
 - [跨团队订阅](guide/zh-CN/subscriptions.md) — 订阅其他团队的 skills，包括 HTTP 源
 - [CI 集成](guide/zh-CN/ci.md) — 在 CI 里从合并请求提炼知识
-- [团队仓库检出](guide/zh-CN/team-repo.md) — Git 子模块，以及 pull 之后运行的脚本
 - [使用统计上报](guide/zh-CN/reporting.md) — 会话与用量统计会写回哪些内容
 - [诊断与维护](guide/zh-CN/diagnostics.md) — `doctor`、统计、更新及相关命令
 - [HTTP 契约](guide/zh-CN/http-contract.md) — 自建后端为 `init --http` 实现的接口

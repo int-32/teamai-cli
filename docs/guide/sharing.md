@@ -67,6 +67,28 @@ sharing:
 
 Teammates push branches and open pull requests. The default branch stays protected.
 
+### Git submodules
+
+Turn this on in `teamai.yaml` when skills are git submodules. Each pull checks them out at the pinned revision.
+
+```yaml
+submodules: true
+```
+
+A private submodule uses the git credentials already on the machine. A failed update warns on this pull and is retried on the next one.
+
+### Post-pull scripts
+
+A Node script runs after pull finishes. Project scope runs the project repo's script. Otherwise the user repo's script runs.
+
+```yaml
+scripts:
+  postPull:
+    path: scripts/deploy.mjs
+```
+
+The path is relative to the team repo root. A session start waits for it, then leaves it running if it times out. An interactive `teamai pull` does not wait. A failure is a line in `~/.teamai/debug.log` and does not fail the pull.
+
 ## Roles and projects
 
 A role is a member's job, such as frontend. Someone who sets that role receives the resources the role lists.

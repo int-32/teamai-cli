@@ -15,7 +15,6 @@ Start with [Getting Started](guide/getting-started.md): set up a team, join one,
 - [Dashboard](guide/dashboard.md) — Local dashboard and session save
 - [Cross-team subscriptions](guide/subscriptions.md) — Subscribe to another team's skills, including an HTTP source
 - [CI integration](guide/ci.md) — Extract knowledge from merge requests in CI
-- [Team repo checkout](guide/team-repo.md) — Git submodules and scripts that run after pull
 - [Usage reporting](guide/reporting.md) — What session and usage stats are written back
 - [Diagnostics and maintenance](guide/diagnostics.md) — `doctor`, stats, updates, and related commands
 - [HTTP contract](guide/http-contract.md) — APIs a custom backend implements for `init --http`

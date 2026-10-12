@@ -67,6 +67,28 @@ skill 和 rule 用 `teamai push`。`docs/`、`hooks/hooks.yaml`、`mcp/mcp.yaml`
 
 同事能推分支、能开 pull request。主干保持保护。
 
+### Git 子模块
+
+skill 用 git submodule 发时，在 `teamai.yaml` 里打开。每次 pull 按仓库钉住的版本检出。
+
+```yaml
+submodules: true
+```
+
+私有子模块用本机已有的 git 凭据。更新失败时这次 pull 会警告，下次再试。
+
+### Pull 后脚本
+
+pull 结束后跑一个 Node 脚本。项目 scope 跑项目仓的，否则跑用户仓的。
+
+```yaml
+scripts:
+  postPull:
+    path: scripts/deploy.mjs
+```
+
+路径相对团队仓库根目录。会话启动时会等它跑完，超时后留在后台；交互式 `teamai pull` 不等。失败不会让 pull 失败，记在 `~/.teamai/debug.log`。
+
 ## 角色和项目
 
 角色是成员的分工，比如前端。设成这个角色的人，会收到角色上声明的资源。
