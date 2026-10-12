@@ -4,8 +4,6 @@
 
 ---
 
-Put skills, rules, and the other harness files in the team repo. Review them in a merge request. `teamai pull` installs them.
-
 ## Skills
 
 ```bash
