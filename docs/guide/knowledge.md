@@ -231,7 +231,8 @@ The report aggregates your local `~/.teamai` knowledge base (or the configured t
 |---------|-------------|
 | **Overview cards** | Total entries, total recalls, overall coverage %, contributors |
 | **Coverage by type** | Breakdown of recall coverage across skills, rules, docs, learnings |
-| **Top recalled** | Ranked list of most frequently recalled entries |
+| **Top recalled** | Bar chart of the most frequently recalled entries; chart labels are shortened to fit |
+| **All entries** | Every entry, including ones no chart reaches, each expandable to its metadata (author, date, recalls, upvotes, tags, file path) and source file content |
 | **Silent entries** | Entries that have never been recalled — candidates for pruning or rewriting |
 | **Last-recall month** | Each entry counts once in its latest recall month, not monthly recall volume |
 | **Author contributions** | Per-contributor entry counts and recall share |

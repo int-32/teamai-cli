@@ -51,12 +51,13 @@ describe('unified dashboard', () => {
       generatedAt: new Date().toISOString(), root: '/tmp/fixture', source: { scope: 'team', label: 'Team' },
       totalEntries: 1, totalRecalls: 0, overallCoveragePct: 0, contributorCount: 1,
       coverage: [{ type: 'docs', total: 1, covered: 0, coveragePct: 0 }], topRecalled: [],
-      silent: [{ docId: 'x', title: '<img src=x onerror=alert(1)>', author: '<script>bad</script>', type: 'docs', date: '', tags: [], recalledCount: 0, upvotedCount: 0, lastRecalledAt: null }],
+      silent: [{ docId: 'x', title: '<img src=x onerror=alert(1)>', author: '<script>bad</script>', type: 'docs', date: '', tags: [], path: '', recalledCount: 0, upvotedCount: 0, lastRecalledAt: null }],
+      allEntries: [{ docId: 'x', title: '<img src=x onerror=alert(1)>', author: '<script>bad</script>', type: 'docs', date: '', tags: [], path: '', recalledCount: 0, upvotedCount: 0, lastRecalledAt: null, body: '<script>bad</script>' }],
       trend: [], authors: [{ author: '<script>bad</script>', entries: 1, totalRecalled: 0 }],
       maintenance: { promote: [], prune: [], stale: [] },
     };
     const sections = renderDashboardReport(data);
-    for (const id of ['overview','coverage','top-recalled','silent','trend','authors']) expect(sections.context).toContain(`id="${id}"`);
+    for (const id of ['overview','coverage','top-recalled','entries','silent','trend','authors']) expect(sections.context).toContain(`id="${id}"`);
     for (const text of ['Promotable Learnings','Suggested for Archive','Stale (Needs Quality Update)']) expect(sections.maintenance).toContain(text);
     expect(sections.context).not.toContain('<script>bad');
     expect(sections.context).not.toContain('<img src=x');
@@ -69,8 +70,12 @@ describe('unified dashboard', () => {
       generatedAt: new Date().toISOString(), root: '/tmp/fixture', source: { scope: 'team', label: 'Team' },
       totalEntries: 3, totalRecalls: 5, overallCoveragePct: 60, contributorCount: 2,
       coverage: [{ type: 'docs', total: 3, covered: 2, coveragePct: 60 }],
-      topRecalled: [{ docId: 'a', title: 'A', author: 'x', type: 'docs', date: '', tags: [], recalledCount: 5, upvotedCount: 1, lastRecalledAt: null }],
-      silent: [{ docId: 'b', title: 'B', author: 'x', type: 'docs', date: '', tags: [], recalledCount: 0, upvotedCount: 0, lastRecalledAt: null }],
+      topRecalled: [{ docId: 'a', title: 'A', author: 'x', type: 'docs', date: '', tags: [], path: '', recalledCount: 5, upvotedCount: 1, lastRecalledAt: null }],
+      silent: [{ docId: 'b', title: 'B', author: 'x', type: 'docs', date: '', tags: [], path: '', recalledCount: 0, upvotedCount: 0, lastRecalledAt: null }],
+      allEntries: [
+        { docId: 'a', title: 'A', author: 'x', type: 'docs', date: '2026-09-01', tags: ['tag'], path: '/kb/a.md', recalledCount: 5, upvotedCount: 1, lastRecalledAt: null, body: 'Content.' },
+        { docId: 'c', title: 'C', author: 'x', type: 'docs', date: '', tags: [], path: '', recalledCount: 0, upvotedCount: 0, lastRecalledAt: null, body: '' },
+      ],
       trend: [{ period: '2026-08', count: 1 }, { period: '2026-09', count: 2 }],
       authors: [{ author: 'x', entries: 3, totalRecalled: 5 }],
       maintenance: {

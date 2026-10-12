@@ -10,7 +10,7 @@ The logo's charcoal/blue palette, four-module navigation, English/Simplified Chi
 | --- | --- |
 | Overview | Local session status/counts, six current/prior 7-day metrics, KB coverage, maintenance candidate counts, session list |
 | Team Execution | All supported tools, repository (all worktrees of a repo as one)/tool filters, active and recently ended sessions, first/latest secret-redacted prompt summaries and output previews, duration, last activity/tool, intervention and token counts; keyboard-accessible Details opens all captured prompt summaries (capped at 200 characters), safely rendered Markdown output and full breakdowns |
-| Team Context | Original KB totals, coverage by type, top recalled chart, expandable never-recalled groups, last-recall month chart, author contribution table, reported data scope and report generation time |
+| Team Context | Original KB totals, coverage by type, top recalled chart, expandable full entry list with each entry's metadata and source content, expandable never-recalled groups, last-recall month chart, author contribution table, reported data scope and report generation time |
 | Team Improvement | Local trends, original promotion/archive/stale candidate guidance and commands, digest/session-save/share-learnings command references |
 
 Maintenance commands remain read-only guidance. No new CLI command or browser mutation endpoint is introduced. `/kb-report` remains the complete original standalone report, including maintenance.
@@ -19,6 +19,7 @@ Maintenance commands remain read-only guidance. No new CLI command or browser mu
 
 - `dashboard-html.ts` embeds the shell, styles, locale catalog and browser application from `src/dashboard/` into one HTML response. No remote assets or package asset-copy step.
 - Existing `/api/sessions`, `/events`, `/api/trends`, `/api/kb-summary` and `/kb-report` stay available. `/api/context` reuses `buildVizData` and the original escaped report section renderers, with a 30-second cache and coalesced concurrent requests.
+- Team Context lists every entry in a collapsible row; expanding it shows the entry's metadata and the content of the file the search index recorded. It renders server-side into the same `context` payload, so no new endpoint, client-side code or knowledge-provider access is added. The list is the whole corpus rather than a top-N slice, because the coverage bars and the top-recalled chart cannot reach every entry. An entry whose file is missing or unreadable keeps its metadata and is labelled, instead of failing the report.
 - SSE reconnects after failure. A 15-second session reconciliation poll also applies the collector's existing idle and 30-second ended-session rules without requiring another hook event. Relative times update every five seconds without replacing the focused row.
 - Fetch failures have retry controls. Previous successful KB/trend values remain visibly marked as stale on refresh failure. No missing metric is converted into a fabricated zero.
 - Local redacted prompt summaries and output remain local and are escaped before HTML/Markdown rendering. Knowledge titles, authors, commands and session content are not translated. Locale/theme preferences are stored only in browser storage and gracefully degrade if it is blocked.

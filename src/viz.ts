@@ -46,9 +46,17 @@ export interface EntryMetric {
   author: string;
   date: string;
   tags: string[];
+  /** Source file path as recorded in the index; '' when the index carries none. */
+  path: string;
   recalledCount: number;
   upvotedCount: number;
   lastRecalledAt: string | null;
+}
+
+/** An entry plus its source file content, for the report's browsable entry list. */
+export interface EntryDetail extends EntryMetric {
+  /** File content, or '' when the file is missing or unreadable. */
+  body: string;
 }
 
 /** Coverage statistics for a single knowledge type. */
@@ -104,6 +112,8 @@ export interface VizData {
   topRecalled: EntryMetric[];
   /** All entries with recalledCount === 0. */
   silent: EntryMetric[];
+  /** Every entry with its file content, most recalled first: the browsable list. */
+  allEntries: EntryDetail[];
   /** Monthly recall activity, ascending by period. */
   trend: TrendPoint[];
   /** Top 15 authors by totalRecalled. */
@@ -392,6 +402,24 @@ function buildAuthors(metrics: EntryMetric[]): AuthorStat[] {
 // ─── Core build function ──────────────────────────────────────────────────────
 
 /**
+ * Attach each entry's file content by reading the path the index recorded.
+ *
+ * A stale index can name a file that has since moved or was never readable, so a
+ * failed read yields '' rather than failing the whole report; the entry still
+ * appears in the list with its metadata.
+ */
+async function readEntryBodies(metrics: EntryMetric[]): Promise<EntryDetail[]> {
+  return Promise.all(metrics.map(async (metric) => {
+    if (!metric.path) return { ...metric, body: '' };
+    try {
+      return { ...metric, body: await fs.readFile(metric.path, 'utf8') };
+    } catch {
+      return { ...metric, body: '' };
+    }
+  }));
+}
+
+/**
  * Build the complete visualization data payload from resolved paths.
  *
  * @param paths - Resolved filesystem paths from resolveVizRoot.
@@ -412,6 +440,7 @@ export async function buildVizData(paths: VizPaths): Promise<VizData> {
       author: entry.author,
       date: entry.date,
       tags: entry.tags,
+      path: entry.path ?? '',
       recalledCount: voteData?.recalledCount ?? 0,
       upvotedCount: voteData?.upvotedCount ?? 0,
       lastRecalledAt: voteData?.lastRecalledAt ?? null,
@@ -427,6 +456,13 @@ export async function buildVizData(paths: VizPaths): Promise<VizData> {
   const silent = metrics.filter((m) => m.recalledCount === 0);
   const trend = buildTrend(metrics);
   const authors = buildAuthors(metrics);
+  // The browsable list is the whole corpus, not a top-N slice, so entries that
+  // the coverage bars and the top-recalled chart cannot show stay reachable.
+  // Most recalled first, then type and title, for a stable order.
+  const allEntries = (await readEntryBodies(metrics)).sort((a, b) =>
+    b.recalledCount - a.recalledCount
+    || a.type.localeCompare(b.type)
+    || (a.title || a.docId).localeCompare(b.title || b.docId));
 
   const [promote, prune, stale] = await Promise.all([
     findPromotionCandidates(paths.learningsDirs, paths.votesDir).catch((err: Error) => {
@@ -458,6 +494,7 @@ export async function buildVizData(paths: VizPaths): Promise<VizData> {
     coverage,
     topRecalled,
     silent,
+    allEntries,
     trend,
     authors,
     maintenance: { promote, prune, stale },

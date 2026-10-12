@@ -31,6 +31,7 @@ function makeVizData(overrides: Partial<VizData> = {}): VizData {
     coverage: [],
     topRecalled: [],
     silent: [],
+    allEntries: [],
     trend: [],
     authors: [],
     maintenance: { promote: [], prune: [], stale: [] },
@@ -183,6 +184,7 @@ describe('renderReport', () => {
           author: 'tester',
           date: '2026-01-01',
           tags: [],
+          path: '',
           recalledCount: 5,
           upvotedCount: 1,
           lastRecalledAt: '2026-01-01T00:00:00Z',
@@ -208,6 +210,7 @@ describe('renderReport', () => {
           author: 'tester',
           date: '2026-01-01',
           tags: [],
+          path: '',
           recalledCount: 0,
           upvotedCount: 0,
           lastRecalledAt: null,
@@ -236,6 +239,41 @@ describe('renderReport', () => {
     const html = renderReport(makeVizData({ totalEntries: 42, overallCoveragePct: 75 }));
     expect(html).toContain('42');
     expect(html).toContain('75%');
+  });
+
+  it('lists every entry with its full title and source content, and escapes that content', () => {
+    const title = 'A title far longer than the thirty character chart label limit allows';
+    const data = makeVizData({
+      allEntries: [
+        {
+          docId: 'kept', title, type: 'learnings', author: 'alice', date: '2026-10-01',
+          tags: ['teamai', 'recall'], path: '/kb/kept.md', recalledCount: 3, upvotedCount: 1,
+          lastRecalledAt: null, body: '# Heading\n\nSome <script>alert(1)</script> content.\n',
+        },
+        {
+          docId: 'gone', title: 'Unreadable entry', type: 'rules', author: 'bob', date: '2026-10-02',
+          tags: [], path: '/kb/gone.md', recalledCount: 0, upvotedCount: 0, lastRecalledAt: null, body: '',
+        },
+      ],
+    });
+
+    const html = renderReport(data);
+    expect(html).toContain('id="entries"');
+    // The full title, not the 30-character chart label
+    expect(html).toContain(`<span class="entry-title">${title}</span>`);
+    expect(html).toContain('/kb/kept.md');
+    expect(html).toContain('teamai, recall');
+    expect(html).toContain('&lt;script&gt;alert(1)&lt;/script&gt;');
+    expect(html).not.toContain('<script>alert(1)</script>');
+    // An entry whose file cannot be read still appears, with its metadata
+    expect(html).toContain('Unreadable entry');
+    expect(html).toContain('No content available.');
+  });
+
+  it('renders "No data." when there is no entry to list', () => {
+    const html = renderReport(makeVizData({ allEntries: [] }));
+    expect(html).toContain('id="entries"');
+    expect(html).toContain('No data.');
   });
 });
 
@@ -371,5 +409,23 @@ describe('buildVizData without a prebuilt index', () => {
 
     expect(titles(data)).toContain('Queued learning');
     expect(paths.learningsDirs).not.toContain(queue);
+  });
+
+  it('carries every entry, with its file path and content, into the browsable list', async () => {
+    await fs.writeFile(
+      path.join(teamRepo, 'manifest', 'projects.yaml'),
+      'version: 1\nprojects:\n  - id: alpha\n    name: Alpha\n    resources:\n      learnings: [alpha]\n',
+    );
+    await learning('shared.md', 'Shared learning');
+    await learning('alpha/x.md', 'Alpha learning');
+
+    const data = await buildVizData(await resolveVizRoot({ config: configFor('user') }));
+
+    // The list is the whole corpus, so nothing the charts slice away is lost
+    expect(data.allEntries.map((entry) => entry.title).sort())
+      .toEqual([...titles(data)].sort());
+    const shared = data.allEntries.find((entry) => entry.title === 'Shared learning');
+    expect(shared?.path).toBe(path.join(teamRepo, 'learnings', 'shared.md'));
+    expect(shared?.body).toContain('Body.');
   });
 });

@@ -5,7 +5,7 @@
  * No I/O, no external dependencies. Returns a complete standalone HTML document string.
  * All user-supplied data strings are HTML-escaped before insertion to prevent XSS.
  */
-import type { VizData, EntryMetric, CoverageStat, TrendPoint, AuthorStat } from './viz.js';
+import type { VizData, EntryMetric, EntryDetail, CoverageStat, TrendPoint, AuthorStat } from './viz.js';
 import type { PromotionCandidate } from './maintenance/promote.js';
 import type { PruneCandidate } from './maintenance/prune.js';
 import type { StaleEntry } from './maintenance/quality-update.js';
@@ -222,6 +222,54 @@ function renderTopRecalledSection(topRecalled: EntryMetric[]): string {
   return `<section id="top-recalled"><h2 data-i18n>Top Recalled Entries</h2>${chart}</section>`;
 }
 
+/**
+ * Render every entry as a collapsible row: the title bar carries the type, and
+ * expanding it shows the entry's metadata and source file.
+ *
+ * This is the only place a full title and an entry's own content are shown —
+ * the charts above truncate titles and render aggregates only. Values are
+ * wrapped in `<code>` and titles in `.entry-title` so the dashboard's report
+ * localizer never translates knowledge text.
+ */
+function renderEntriesSection(allEntries: EntryDetail[]): string {
+  if (allEntries.length === 0) {
+    return `<section id="entries"><h2 data-i18n>All Entries</h2><p data-i18n>No data.</p></section>`;
+  }
+
+  const items = allEntries
+    .map((m) => {
+      const fields = [
+        `<span><span data-i18n>Author</span> <code>${escapeHtml(m.author || 'unknown')}</code></span>`,
+        `<span><span data-i18n>Date</span> <code>${escapeHtml(m.date || 'unknown')}</code></span>`,
+        `<span><span data-i18n>Recalls</span> <code>${m.recalledCount}</code></span>`,
+        `<span><span data-i18n>Upvotes</span> <code>${m.upvotedCount}</code></span>`,
+        m.tags.length
+          ? `<span><span data-i18n>Tags</span> <code>${escapeHtml(m.tags.join(', '))}</code></span>`
+          : '',
+        `<span><span data-i18n>Path</span> <code>${escapeHtml(m.path || 'unknown')}</code></span>`,
+      ].filter(Boolean).join('');
+      const body = m.body
+        ? `<pre class="entry-body"><code>${escapeHtml(m.body)}</code></pre>`
+        : `<p class="muted" data-i18n>No content available.</p>`;
+      return [
+        `<details class="entry">`,
+        `  <summary><span class="entry-title">${escapeHtml(m.title || m.docId)}</span>` +
+          ` <span class="badge" data-i18n>${escapeHtml(m.type)}</span></summary>`,
+        `  <div class="entry-meta">${fields}</div>`,
+        `  ${body}`,
+        `</details>`,
+      ].join('\n');
+    })
+    .join('\n');
+
+  return [
+    `<section id="entries">`,
+    `  <h2><span data-i18n>All Entries</span> (${allEntries.length})</h2>`,
+    `  ${items}`,
+    `</section>`,
+  ].join('\n');
+}
+
 /** Render the never-recalled entries section, grouped by type with collapsible details, as an HTML string. */
 function renderSilentSection(silent: EntryMetric[]): string {
   if (silent.length === 0) {
@@ -393,7 +441,8 @@ function renderMaintenanceSection(data: VizData): string {
 export function renderDashboardReport(data: VizData): { context: string; maintenance: string } {
   return {
     context: renderOverviewCards(data) + renderCoverageSection(data.coverage)
-      + renderTopRecalledSection(data.topRecalled) + renderSilentSection(data.silent)
+      + renderTopRecalledSection(data.topRecalled) + renderEntriesSection(data.allEntries)
+      + renderSilentSection(data.silent)
       + renderTrendSection(data.trend) + renderAuthorsSection(data.authors),
     maintenance: renderMaintenanceSection(data),
   };
@@ -517,6 +566,7 @@ function renderStyles(): string {
   section:nth-child(5) { animation-delay: 0.28s; }
   section:nth-child(6) { animation-delay: 0.34s; }
   section:nth-child(7) { animation-delay: 0.40s; }
+  section:nth-child(8) { animation-delay: 0.46s; }
   @keyframes fadeInUp {
     from { opacity: 0; transform: translateY(10px); }
     to   { opacity: 1; transform: translateY(0); }
@@ -661,6 +711,47 @@ function renderStyles(): string {
   li:last-child { border-bottom: none; }
   .entry-title { color: var(--text); }
 
+  /* === Browsable entry list === */
+  .entry > summary { padding: 8px 14px; }
+  .entry-meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px 18px;
+    padding: 10px 14px 0 29px;
+    font-size: 0.82rem;
+    color: var(--text2);
+  }
+  .entry-meta code {
+    display: inline;
+    background: none;
+    border: none;
+    border-radius: 0;
+    padding: 0;
+    margin-top: 0;
+    color: var(--text);
+  }
+  .entry-body {
+    margin: 10px 14px 12px 29px;
+    padding: 12px 14px;
+    background: var(--code-bg);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    overflow-x: auto;
+  }
+  .entry-body code {
+    display: block;
+    background: none;
+    border: none;
+    border-radius: 0;
+    padding: 0;
+    margin-top: 0;
+    color: var(--text);
+    font-size: 0.8rem;
+    line-height: 1.55;
+    white-space: pre-wrap;
+    word-break: break-word;
+  }
+
   /* === Badges === */
   .badge {
     display: inline-block;
@@ -747,6 +838,7 @@ export function renderReport(data: VizData): string {
     renderOverviewCards(data),
     renderCoverageSection(data.coverage),
     renderTopRecalledSection(data.topRecalled),
+    renderEntriesSection(data.allEntries),
     renderSilentSection(data.silent),
     renderTrendSection(data.trend),
     renderAuthorsSection(data.authors),
