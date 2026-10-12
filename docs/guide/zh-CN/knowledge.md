@@ -68,7 +68,7 @@ teamai recall "GPU 内存不足"
   Recall skips the older index at <path>…``。其他原因导致的构建失败会显示具体原因，而不是 "No learnings available"
 - 提供轻量相关性预检 `teamai recall --check "<关键词>"`，输出 `RELEVANT score=<n> threshold=<n>` 或 `NOT_RELEVANT score=<n> threshold=<n>`，不读取引用的源码文件来检查新鲜度，也不 upvote —— recall subagent 用它在任务与团队知识无关时跳过检索。当 top 命中为 `RELEVANT` 时，还会输出 `matched=`/`missing=`，即命中/未命中其 title 与 tag 的查询词
 - `RELEVANT` 表示分数越过阈值、值得花成本读文件，**不代表**知识库覆盖了你要找的主题。请用 `matched=`/`missing=`（以及完整结果里的 `Matched:`/`Missing:` 行）自行判断：若关键区分词全部落在 missing 里，那条只是主题相邻，并非答案
-- 返回的代码库源码可能带有 `Source freshness:` 行，按文件列出 `current`、`stale`、`missing` 或 `unknown`，并可附 `last scan` 时间。它将源码文件与知识库扫描基线比较；即使是 `current`，也不能证明知识文档正确。依赖实现细节前，应核对 `stale`、`missing` 或 `unknown` 的源码；状态含义与边界见[进阶功能](./advanced.md#代码知识图谱)
+- 返回的代码库源码可能带有 `Source freshness:` 行，按文件列出 `current`、`stale`、`missing` 或 `unknown`，并可附 `last scan` 时间。它将源码文件与知识库扫描基线比较；即使是 `current`，也不能证明知识文档正确。依赖实现细节前，应核对 `stale`、`missing` 或 `unknown` 的源码；状态含义与边界见[代码知识图谱](./codebase-graph.md)
 
 ### Recall 采纳与 upvote
 
