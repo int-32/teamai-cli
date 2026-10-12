@@ -168,6 +168,8 @@ models: how model: strong resolves for agents implementer, planner:
 
 ## GitHub Copilot CLI
 
+[VS Code Agent Host 中的 Copilot 会话](https://code.visualstudio.com/docs/agent-customization/hooks)与 Copilot CLI 使用同一套 Hook 实现。VS Code 的 Local harness 也会发现 `~/.copilot/hooks`，但事件和负载行为不同；CLI 验证不能替代该运行环境的验证。
+
 GitHub Copilot CLI 已支持其官方自定义指令、Rules、Skills、自定义 Agent、Hooks 和 MCP 配置面，以及 TeamAI Docs 和 Env 下发：
 
 - **作用域。** 用户资源位于 `$COPILOT_HOME`（默认 `~/.copilot`）下，项目资源位于 `<project>/.github` 下。TeamAI 在检测以及所有用户级读写中都会遵循 `COPILOT_HOME`。
@@ -177,7 +179,7 @@ GitHub Copilot CLI 已支持其官方自定义指令、Rules、Skills、自定�
 - **自定义 Agents。** 团队 Agents 会转换为 `$COPILOT_HOME/agents/` 或 `.github/agents/` 下的官方 `<name>.agent.md` 配置。TeamAI 将兼容的工具名映射为 Copilot 主别名，通过 `tool_extras.copilot` 保留 Copilot 专属 frontmatter，并且只删除与团队 Agent 或内置 recall 配置匹配的文件；用户自建配置保持不变。详见 [GitHub 自定义 Agent 配置](https://docs.github.com/zh/copilot/reference/custom-agents-configuration)。
 - **Team Context recall。** 内置 `teamai-recall.agent.md` 只获得 `execute`、`read` 和 `search`。它调用现有的 `teamai recall` 流程，让 Copilot 检索 learnings、codebase 证据和 teamwiki 结果，而不会复制或创建第二套知识库。
 - **Docs 和 Env。** 团队 Docs 同步到配置的本地文档目录（默认 `~/.teamai/docs`；project scope 使用项目内对应路径）。团队环境变量同步到该作用域由 TeamAI 管理的 `env.sh`；请从已 source 此文件的 shell 启动 Copilot。TeamAI 不会把环境变量值复制到 Copilot 配置中。
-- **Hooks 与隐私遥测。** TeamAI 在 `$COPILOT_HOME/hooks/teamai.json` 或 `.github/hooks/teamai.json` 写入独立的 version-1 Hook 文件，使用 Copilot 与 VS Code 兼容的 PascalCase 事件（`SessionStart`、`UserPromptSubmit`、`PostToolUse`、`Stop` 和 `SessionEnd`），从而保留 TeamAI 所需的 snake_case Hook 负载字段，并生成 `bash`、`powershell` 和后备 `command` 字段。会话 ID、Skill 使用、提示次数、生命周期状态和最终 Token 总数会进入本地 Dashboard；Copilot 提示原文、助手输出、Transcript 路径和请求元数据绝不会被保存。若最终 Token 计数不可用，会话仍会被记录，但不包含 Token 数据。对于恢复的会话，TeamAI 在 SessionStart 时保存不含路径的日志字节边界；
+- **Hooks 与隐私遥测。** TeamAI 将内置 Hook 写入 `$COPILOT_HOME/hooks/teamai.json`（默认 `~/.copilot/hooks/teamai.json`），普通 project scope 安装也使用该文件。自定义团队 Hook 仍放在项目的 `.github/hooks/teamai.json`；self mode 的内置 Hook 也保留在项目中。每个项目下次执行 `init`、`pull` 或 `hooks inject` 时，会移除原先生成的内置 Hook，并保留无关 Hook。self 会话跳过全局副本。其他情况下，会话加载的每个副本（多个全局 JSON 文件，或运行中会话仍持有的旧项目命令）对每个事件竞争认领：最先运行的副本在 `~/.teamai/copilot-hook-claims/` 下认领该事件，其余副本退出，因此无论会话加载了哪些文件，每个事件只执行一次。认领键由事件负载、matcher 以及（若已设置）`COPILOT_AGENT_SESSION_ID` 组成；这依赖 Copilot 把同一份带毫秒 `timestamp` 的负载传给该事件的每个 Hook（依据 Copilot CLI 0.0.411 的实现，未检查更新版本）。负载没有 `timestamp`，或认领无法写入时，所有已加载副本都会执行，事件可能执行两次，但不会丢失。超过两天的认领会被清除。当 Copilot 加载的启用 JSON 文件中不再有任何文件包含该内置 Hook 时，缓存的副本停止执行：全局副本检查 `$COPILOT_HOME/hooks/`，旧项目副本检查该目录及其项目的 `.github/hooks/`。Dispatcher 根据 Hook 的工作目录解析项目配置。项目卸载保留共享全局文件；`hooks remove` 则显式移除 `$COPILOT_HOME/hooks/` 下每个 JSON 文件中的内置 Hook，包括其他项目配置的文件名。文件采用 version-1 格式，使用 Copilot 与 VS Code 兼容的 PascalCase 事件（`SessionStart`、`UserPromptSubmit`、`PostToolUse`、`Stop` 和 `SessionEnd`），从而保留 TeamAI 所需的 snake_case Hook 负载字段，并生成 `bash`、`powershell` 和后备 `command` 字段。会话 ID、Skill 使用、提示次数、生命周期状态和最终 Token 总数会进入本地 Dashboard；Copilot 提示原文、助手输出、Transcript 路径和请求元数据绝不会被保存。若最终 Token 计数不可用，会话仍会被记录，但不包含 Token 数据。对于恢复的会话，TeamAI 在 SessionStart 时保存不含路径的日志字节边界；
 
   只有此前的运行标记尚未关闭、且未被上次运行使用时，才会采纳该标记。关闭计数必须关联这个标记或边界之后写入的标记。若标记仅在 SessionStart 之后出现，而 SessionEnd 没有提供方时间戳，则无法确认它属于本次运行；会话仍会被记录，但不包含 Token 数据。文件会被幂等合并，且保留无关条目。TeamAI 从不修改 Copilot 的 `settings.json`。
 - **MCP。** `teamai pull` 和 `teamai mcp inject` 使用 Copilot 原生结构，把本地与远程 Server 合并到 `$COPILOT_HOME/mcp-config.json` 或 `.github/mcp.json`。归属信息保存在 Copilot 文件之外，因此重复 pull 保持幂等，`mcp remove` 或卸载只会移除 TeamAI 管理的条目；手写 Server 与 `settings.json` 均保持不变。
@@ -263,7 +265,7 @@ WorkBuddy 运行的是 CodeBuddy 的引擎，因此两者都按 CodeBuddy 的格
 ZCode 已作为内置目标支持。Skills 下发到 `.zcode/skills/`（ZCode 同时会读取中央目录 `~/.agents/skills/`，该目录由 `agents` 条目覆盖），Subagents 以 Claude 风格 Markdown 下发到 `.zcode/agents/`。Hooks 会合并进共享的 `~/.zcode/cli/config.json`，并保留插件状态等无关键值。写入器为你处理了两个 ZCode 特有的细节：
 
 - ZCode 的配置文件钩子**默认禁用**——TeamAI 会强制置 `hooks.enabled: true`，确保写入的条目真正生效。
-- Windows 上，钩子条目通过隐藏的 **wscript VBS 启动器**执行（`wscript.exe <teamai-hook-dispatch.vbs> <分发命令尾段>`）：wscript 属 GUI 子系统，钩子运行绝不弹控制台黑框；启动器把 STDIN 暂存为临时文件再转发，保证 payload 完整到达 `hook-dispatch`。超时按事件放宽（会话启动 180 秒、stop / prompt 提交 60 秒、工具调用后 30 秒），避免会话启动时携带仓库拉取的分发被中途掐断。含多字节文本（如中文）的 payload 在启动器的 ANSI 代码页暂存环节可能降级——身份字段会被抢救，降级分发仍能正确关联到会话；卸载时会同时清除条目与脚本文件。
+- Windows 上，钩子条目通过隐藏的 **Node 启动器**执行（`node <teamai-hook-dispatch.mjs> <分发命令尾段>`）：ZCode 通过 stdio 与 `process` 钩子通信，启动器把这份 stdin 与 stdout 原样交给分发进程，钩子的 JSON 回执因此逐字节到达 ZCode（多字节文本也完整保留），退出码一并回传（0 成功、2 阻塞）。启动器会让分发进程不开控制台窗口，且不需要 bash。超时按事件放宽（会话启动 180 秒、stop / prompt 提交 60 秒、工具调用后 30 秒），避免会话启动时携带仓库拉取的分发被中途掐断。`teamai hooks inject` 会在启动器内容变化时重写它，并删除旧版本写入的 VBS 启动器；卸载时会同时清除条目与脚本文件。
 - POSIX 上条目就是普通的 `bash -lc <分发命令尾段>` argv 向量，不写入启动器；两个平台上，命令尾段都以 argv 末位元素原样存储——这正是托管条目识别与托管清单比对的依据。
 
 以上路径已对照 ZCode 桌面端实测验证：设置页「新建子智能体」写入的就是 `~/.zcode/agents/*.md`，反向放入的文件也会出现在页面的已安装列表中。MCP Server 下发到 `~/.agents/mcp.json`（用户级，Claude 的 `mcpServers` 结构——正是 ZCode 自己的 MCP 设置页读取的文件）。项目级暂未接入：ZCode 的工作区 MCP 使用不同的键（`.zcode/config.json` 内的 `mcp.servers`），Claude 写入器无法生成该结构。ZCode 不读取 rules 目录：
