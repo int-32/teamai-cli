@@ -8,7 +8,6 @@ Start with [Getting Started](guide/getting-started.md): set up a team, join one,
 
 - [Getting Started](guide/getting-started.md) — set up a team, join one, or share an AI asset with the team
 - [Setup demos](guide/admin-setup.md) — Copy a block: scope, repo, packages, models, env, MCP, roles
-- [Git Providers](guide/providers.md) — GitHub, GitLab, GitCode, CNB, TGit and generic Git: detection and authentication
 - [Member Guide](guide/member-guide.md) — Joining a team, day-to-day use, commit co-author attribution, keeping delivered files out of git
 - [Sharing Team Resources](guide/sharing.md) — Publishing skills, rules, docs, env, agents, hooks and MCP servers
 - [Team Knowledge](guide/knowledge.md) — Knowledge capture, recall, and the knowledge base health report
@@ -25,6 +24,7 @@ Start with [Getting Started](guide/getting-started.md): set up a team, join one,
 - [HTTP contract](guide/http-contract.md) — APIs a custom backend implements for `init --http`
 - [Reference](guide/reference.md) — Command reference, configuration reference, model profiles
 - [Windows](guide/windows.md) — Getting agent hooks to fire on Windows
+- [Git Providers](guide/providers.md) — GitHub, GitLab, GitCode, CNB, TGit and generic Git: detection and authentication
 - [Uninstall & FAQ](guide/faq.md) — Removing TeamAI and frequently asked questions
 
 For the complete list of commands and flags, run `teamai --help` and `teamai <command> --help`.

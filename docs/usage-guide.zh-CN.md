@@ -8,7 +8,6 @@
 
 - [快速开始](guide/zh-CN/getting-started.md) — 搭建团队、加入团队，或把 AI 资产分享给团队
 - [配置示例](guide/zh-CN/admin-setup.md) — 安装范围、仓库、团队包、模型、环境变量、MCP、角色
-- [Git Provider](guide/zh-CN/providers.md) — GitHub、GitLab、GitCode、CNB、工蜂与通用 Git：检测与认证
 - [成员使用](guide/zh-CN/member-guide.md) — 加入团队、日常使用、提交 Co-Author 署名、让分发的文件不进入 git
 - [共享团队资源](guide/zh-CN/sharing.md) — 发布 skills、rules、docs、env、agents、hooks 与 MCP server
 - [团队知识](guide/zh-CN/knowledge.md) — 知识沉淀与检索、知识库健康报告
@@ -25,6 +24,7 @@
 - [HTTP 契约](guide/zh-CN/http-contract.md) — 自建后端为 `init --http` 实现的接口
 - [参考](guide/zh-CN/reference.md) — 命令参考、配置文件参考、模型配置
 - [Windows](guide/zh-CN/windows.md) — 让 Agent 钩子在 Windows 上生效
+- [Git Provider](guide/zh-CN/providers.md) — GitHub、GitLab、GitCode、CNB、工蜂与通用 Git：检测与认证
 - [卸载与常见问题](guide/zh-CN/faq.md) — 卸载 TeamAI 与常见问题
 
 命令与 flag 的完整用法以 `teamai --help` 和 `teamai <command> --help` 为准。
