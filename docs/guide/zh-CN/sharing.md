@@ -4,7 +4,7 @@
 
 ---
 
-## Skills（技能）
+## Skills
 
 ```bash
 mkdir -p ~/.claude/skills/my-deploy-helper
@@ -27,7 +27,7 @@ teamai push --role pm
 
 没有 frontmatter 时，`push` 会补上 `name` 和 `description`。默认写到 `skills/<主角色>/<name>/`，`--role` 改写到指定角色。
 
-## Rules（规则）
+## Rules
 
 ```bash
 cat > ~/.claude/rules/code-review-guide.md << 'EOF'
@@ -48,6 +48,22 @@ sharing:
 ```
 
 你自己的 rule 会留下。`push` 只把已有团队 rule 的正文写回仓库。
+
+## Agents
+
+`agents/<name>.yaml`。`name` 与文件名一致。自己 commit，或在工具里改完后 `teamai push`。
+
+```yaml
+# agents/code-reviewer.yaml
+name: code-reviewer
+description: Review a change before it is pushed
+instructions: |
+  Read the diff and comment on correctness, tests, and risks.
+tools: [Read, Grep]
+targets: [claude, cursor]
+```
+
+只给一个角色时放到 `agents/<namespace>/`，并在该角色的 `resources.agents` 里声明这个 namespace。
 
 ## Env、hooks 与 MCP server 按 namespace 划分
 
@@ -100,17 +116,22 @@ teamai env set GITHUB_TOKEN
 teamai env exec -- gh pr create
 ```
 
-## Docs（文档）
+## Hooks
 
-把文件放进团队仓库的 `docs/`，提交后成员 `pull` 时同步。某个目录只给一部分人时，在 `resources.docs` 里声明：
+`hooks/hooks.yaml` 自己 commit。`builtin` 只写在这个根文件里。
 
 ```yaml
-# manifest/projects.yaml
-projects:
-  - id: checkout
-    resources:
-      docs: [checkout]
+hooks:
+  - id: block-secret
+    description: 提交前扫描密钥
+    event: PreToolUse
+    matcher: Bash
+    command: bash ~/.teamai/team-scripts/scan-secret.sh
+    timeout: 15
+    tools: [claude, cursor]
 ```
+
+只给一个项目时写到 `hooks/<ns>/hooks.yaml`。
 
 ## MCP Server
 
@@ -140,4 +161,16 @@ servers:
 teamai mcp list
 teamai mcp inject
 teamai mcp remove
+```
+
+## Docs（文档）
+
+把文件放进团队仓库的 `docs/`，提交后成员 `pull` 时同步。某个目录只给一部分人时，在 `resources.docs` 里声明：
+
+```yaml
+# manifest/projects.yaml
+projects:
+  - id: checkout
+    resources:
+      docs: [checkout]
 ```

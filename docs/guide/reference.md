@@ -57,17 +57,7 @@ sharing:
         retries: 3             # optional; retry attempts on failure (default 3)
 ```
 
-`teamai pull` mirrors the non-hidden `docs/` files you receive (see [Docs by namespace](./sharing.md#docs)) into `sharing.docs.localDir`: documents deleted from the team repo are also deleted locally, even when the last document or the entire team directory is removed. A local file at a deleted document's path is deleted only when it holds a version of that document from the team repo's history; any other is kept, and pull names it (`Kept <path>: the team removed docs/<file>, but this copy matches no team version of it. Delete it when you no longer need it.`). A directory you put where the team had a document is kept whole, and named the same way. 
-
-A link you put in the mirror at a path the team never had is kept too, and named (`Kept <path>: it is a link of yours, and the team does not have docs/<file>. Delete it when you no longer need it.`). When `sharing.docs.localDir` itself is a link, it is yours: pull delivers no docs through it, deletes nothing behind it and names it (`Kept <path>: it is a link of yours, so teamai delivers no docs through it. ...`), `teamai doctor` fails `Team docs delivered` with that line, and `teamai uninstall` leaves it and what it points at. 
-
-While the team repo's history cannot be read (the team clone is not a git repository, or git fails), no local file is deleted, since nothing proves it teamai's. Empty stale directories are removed; hidden files and directories are preserved. A file of yours at a path the team repo's history never had stays, untouched and unnamed. 
-
-The mirror keeps no record of what it wrote, so a file at a team document's path is teamai's only when it holds that document at some revision of the team repo's history; anything else there is yours: pull keeps it and names it with the `Kept <path>: it is not teamai's ...` line above, `teamai doctor` lists it under `Team docs delivered`, and the team version reaches that path once you rename or delete it and run `teamai pull`. A destination that overlaps the team repo or contains the home/project root is rejected; if it is already the team's `docs/` directory, no copying or cleanup is needed. 
-
-File/directory type changes at the same path are handled using staged replacements, and only for an entry the team history proves teamai's: a file where the team now has a directory, or a directory where the team now has a file, whose every file holds a team version. Any other such entry is yours and is kept and named like a file above, a link included unless the team has the same link there; pull never follows a link. Failed replacements restore the conflicting local entries. If a directory to be replaced contains hidden local entries, move those entries first; the sync refuses to discard them. A failed copy stops cleanup. 
-
-`teamai pull --dry-run` previews the sync without changing files.
+`teamai pull` copies the `docs/` you receive into `sharing.docs.localDir` (see [Docs](./sharing.md#docs)). A document the team deleted is deleted locally when the local copy matches a team revision. A file you changed is kept, and pull prints `Kept <path>`. When `localDir` itself is a link, nothing is written through it. `teamai pull --dry-run` only previews.
 
 ### config.yaml (local config)
 
@@ -92,23 +82,20 @@ toolRoots:                     # optional; per-machine tool roots (see below)
 
 #### Relocated tool roots (`toolRoots`)
 
-A tool that can be told to keep its configuration somewhere else — Claude Code through `CLAUDE_CONFIG_DIR`, Codex through `CODEX_HOME` — reads nothing that teamai writes to the team-wide default. `toolRoots` names the directory that tool actually uses, keyed by the same tool id as `toolPaths`, and every path teamai resolves for it (skills, rules, agents, `CLAUDE.md`, settings and hooks, the user-scope MCP config, and Codex's co-author setting in `config.toml`) moves there with it. Other tools are untouched, and so are project-scope paths: those hang off the project root, where a per-machine root has nothing to say. 
+When Claude Code uses `CLAUDE_CONFIG_DIR`, or Codex uses `CODEX_HOME`, put that directory in `toolRoots`. Only `claude` and `codex` are accepted.
 
-Hooks are the exception that makes this worth recording — the built-in hooks are injected into your home directory even in project scope, so they follow `toolRoots` in both, and teamai trusts Codex hooks in the `config.toml` under `toolRoots.codex`.
+```bash
+CLAUDE_CONFIG_DIR=~/.claude-work teamai init
+```
 
-`teamai init` fills it in for you: whenever `CLAUDE_CONFIG_DIR` or `CODEX_HOME` is set, init records the directory it points at (`toolRoots.claude`, `toolRoots.codex`) and prints it. That includes `CLAUDE_CONFIG_DIR=~/.claude`, which is not the same as leaving the variable unset — Claude Code reads `.claude.json` from inside the configured directory, so teamai writes the MCP config to `~/.claude/.claude.json` rather than `~/.claude.json`. `init` is also the only command that reads these variables, because they live in one shell profile while teamai also runs from session hooks and other terminals; resolving it per run would make the sync target depend on who started the process. 
+`init` records the directory. Run `init` again after you move it. Clear the record:
 
-A re-init keeps a root that was recorded earlier, so running `init` from a shell without the variable does not send the sync back to the default. When a re-init does move the root, the hooks teamai injected into the previous root's settings file (`settings.json`, Codex's `hooks.json`) are removed so that the tool stops syncing into the new one; the skills, rules and instruction files written there are left in place and named in the output. A project-scope `init` that has no record of its own and no variable to read starts from the user-scope record, since the root is a fact about the machine and project hooks land in your home directory. 
+```bash
+CLAUDE_CONFIG_DIR= teamai init
+CODEX_HOME= teamai init
+```
 
-To end a relocation, run `init` once with the variable set but blank (`CLAUDE_CONFIG_DIR= teamai init …`, `CODEX_HOME= teamai init …`): the record is cleared and the old root released the same way. Along with the hooks, the old root loses the teamai-managed MCP servers and, for Claude Code, any gateway credentials the local agent delivered there; they are active configuration, unlike the skills and rules.
-
-A root has to be somewhere teamai can recognize the tool at: a directory in your home other than `~/.config` itself (`~/.claude-work`), or a directory under `.config/` — `~/.config/<name>`, or nested deeper (`~/.config/cloak/profiles/work/claude`, the layout per-directory profile managers such as cloak produce). A leading `~/` is expanded. A nested `.config/` root is fine because the "is this tool installed?" check reads the root the config recorded rather than a prefix of the path, and `.config/` is a narrow enough namespace to find it in; a nested root that is not under `.config`, or any root outside your home directory, is refused with a warning rather than silently half-applied.
-
-Skill-use tracking reads the recorded roots as well, so a relocated tool's skills count as installed, and `import --from-claude` reads a relocated Claude Code's rules.
-
-`toolRoots` currently applies to `claude` and `codex` only, and any other tool id is refused with a warning. A root is only honest for a tool whose every user-scope write goes through `toolPaths`; the other tools still write somewhere teamai resolves separately — OMP's extension directory, the Cursor co-author file, OpenCode's plugin directory — so moving their `toolPaths` entries would leave the rest behind. Copilot CLI has its own mechanism: set `COPILOT_HOME`.
-
-If you set or change `CLAUDE_CONFIG_DIR` or `CODEX_HOME` after initializing, `teamai doctor` reports it: the `Claude Code root matches CLAUDE_CONFIG_DIR` and `Codex root matches CODEX_HOME` checks (each built only when this config syncs that tool) compare the variable against the root this config actually syncs to and tell you to re-run `teamai init` — or, for a value teamai cannot sync to, say why. With the variable unset, the check stays out of the report.
+The directory has to sit in your home (`~/.claude-work`) or under `~/.config/`. Copilot uses its own `COPILOT_HOME`. After the variable changes, `teamai doctor` reports the mismatch and tells you to run `init` again.
 
 ### Webhook notifications (`sharing.webhooks`)
 

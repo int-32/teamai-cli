@@ -57,17 +57,7 @@ sharing:
         retries: 3             # 可选，失败重试次数（默认 3）
 ```
 
-`teamai pull` 将你收到的 `docs/` 非隐藏文件（见[按 namespace 分发 docs](./sharing.md#docs文档)）镜像同步到 `sharing.docs.localDir`：团队库删除的文档，本地也会一并删除，包括删除最后一篇文档或整个团队文档目录的情况。被删除文档路径上的本地文件，只有与团队仓库历史中该文档的某个版本相同时才会删除；
-
-其他文件会保留，并由 pull 指出（`Kept <path>: the team removed docs/<file>, but this copy matches no team version of it. Delete it when you no longer need it.`）。你在团队曾有文档的位置放置的目录会整体保留，并以同样方式指出。你在镜像中团队从未有过的路径上放置的链接也会保留，并被指出（`Kept <path>: it is a link of yours, and the team does not have docs/<file>. Delete it when you no longer need it.`）。若 `sharing.docs.localDir` 本身是链接，它属于你：
-
-pull 不会通过它写入任何文档，也不会删除它指向的任何内容，并会指出它（`Kept <path>: it is a link of yours, so teamai delivers no docs through it. ...`）；`teamai doctor` 的 `Team docs delivered` 会以这一行失败；
-
-`teamai uninstall` 会保留它及其指向的内容。团队仓库的历史无法读取时（团队克隆不是 git 仓库，或 git 出错），不会删除任何本地文件，因为无法证明它属于 teamai。过期的空目录也会删除，隐藏文件和隐藏目录会保留。团队仓库历史中从未出现过的路径上你自己的文件会保留，既不改动也不提示。镜像不记录它写入的内容，因此团队文档路径上的文件，只有与团队仓库历史中该文档的某个版本相同时才算 teamai 的；其他文件属于你：pull 会保留它，并用上文的 `Kept <path>: it is not teamai's ...` 一行指出，`teamai doctor` 会在 `Team docs delivered` 中列出它；
-
-你将它改名或删除并运行 `teamai pull` 后，团队版本才会写到该路径。目标目录若与团队仓库重叠，或包含主目录／项目根目录，会被拒绝同步；若目标本身就是团队的 `docs/`，则无需复制或清理。同名路径的文件／目录类型变化会先准备替换内容，且只替换团队历史能证明属于 teamai 的条目：团队现在是目录、本地是文件的位置，或团队现在是文件、本地是目录且其中每个文件都是团队版本的位置。其他这类条目属于你，会像上文的文件一样保留并被指出；链接也是如此，除非团队在该位置有相同的链接；
-
-pull 从不跟随链接。替换失败时恢复冲突的本地条目。若待替换目录含本地隐藏条目，需先移走这些条目；同步不会丢弃它们。复制失败时不会继续清理。`teamai pull --dry-run` 只预览同步，不修改文件。
+`teamai pull` 把你收到的 `docs/` 同步到 `sharing.docs.localDir`（见 [Docs（文档）](./sharing.md#docs文档)）。团队删掉的文档，本地同一份也会删。你自己改过、对不上团队历史的文件会留下，pull 打出 `Kept <path>`。`localDir` 本身是链接时不往里写。`teamai pull --dry-run` 只预览。
 
 ### config.yaml（本地配置）
 
@@ -92,23 +82,20 @@ toolRoots:                     # 可选，每机器的工具根目录（见下�
 
 #### 迁移后的工具根目录（`toolRoots`）
 
-有的工具可以把自己的配置放到别处——Claude Code 通过 `CLAUDE_CONFIG_DIR`、Codex 通过 `CODEX_HOME` 这样做——此时 teamai 按团队默认位置写入的内容它一概读不到。`toolRoots` 用与 `toolPaths` 相同的工具 id 指明该工具实际使用的目录，teamai 为它解析的所有路径（skills、rules、agents、`CLAUDE.md`、settings 与 hook、用户级 MCP 配置，以及 Codex 写在 `config.toml` 里的 co-author 设置）都会一并迁过去。其他工具不受影响，project scope 的路径也不受影响：
+Claude Code 用 `CLAUDE_CONFIG_DIR`、Codex 用 `CODEX_HOME` 把配置放到别处时，在 `toolRoots` 里写那个目录。目前只认 `claude` 和 `codex`。
 
-那些路径挂在项目根目录下，每机器的根目录对它们没有意义。hook 是个例外，也正是值得记录 `toolRoots` 的原因——即使在 project scope，内置 hook 也注入到 home 目录，因此两种 scope 下都跟随 `toolRoots`，teamai 也在 `toolRoots.codex` 下的 `config.toml` 中信任 Codex hooks。
+```bash
+CLAUDE_CONFIG_DIR=~/.claude-work teamai init
+```
 
-`teamai init` 会自动写入：只要设置了 `CLAUDE_CONFIG_DIR` 或 `CODEX_HOME`，init 就记录它指向的目录（`toolRoots.claude`、`toolRoots.codex`）并打印出来。`CLAUDE_CONFIG_DIR=~/.claude` 也算——它与不设置该变量并不等价：设置之后 Claude Code 从配置目录内部读取 `.claude.json`，因此 teamai 写的是 `~/.claude/.claude.json` 而不是 `~/.claude.json`。读取这些变量的命令也只有 `init`
+`init` 会记下它指向的目录。换目录后再跑一次 `init`。清掉记录：
 
-——它们只存在于某一份 shell 配置里，而 teamai 还会从 session hook 和别的终端里运行，每次运行都去读它，同步目标就会取决于是谁启动了进程。重新执行 `init` 会保留之前记录的根目录，所以在没有该变量的 shell 里再跑一次 init，同步目标不会被悄悄改回默认位置。如果重新执行 `init` 确实换了根目录，teamai 会把此前注入到旧根目录设置文件（`settings.json`，Codex 为 `hooks.json`）里的 hook 移除，以免那个工具继续往新目录同步；写在旧目录里的 skills、rules 和指令文件会原样保留，并在输出中指明位置。project scope 的 `init` 若自身没有记录、也读不到该变量，则沿用 user scope 的记录：
+```bash
+CLAUDE_CONFIG_DIR= teamai init
+CODEX_HOME= teamai init
+```
 
-根目录是这台机器的事实，而 project scope 的 hook 也注入到 home 目录。要结束迁移，把该变量设为空再执行一次 `init`（`CLAUDE_CONFIG_DIR= teamai init …`、`CODEX_HOME= teamai init …`）：记录会被清除，旧根目录按同样方式释放。除 hook 之外，旧根目录里 teamai 管理的 MCP server，以及（Claude Code 的）本地 agent 下发的网关凭据也会一并移除——它们是生效中的配置，不同于 skills 和 rules。
-
-根目录必须是 teamai 能够识别该工具的位置：home 目录下的一层目录（`~/.claude-work`，但 `~/.config` 本身除外），或者 `.config/` 下的目录——`~/.config/<名称>`，或更深的层级（`~/.config/cloak/profiles/work/claude`，即 cloak 这类「按目录切换 profile」的工具产生的布局）。开头的 `~/` 会被展开。`.config/` 下的深层根目录之所以可用，是因为「该工具是否已安装」这项检查读的是配置里记录的根目录本身，而不是路径上的某个前缀，而 `.config/` 是一个足够窄、能在其中定位到它的命名空间；不在 `.config` 之下的深层根目录、以及 home 目录之外的任何路径，都会被拒绝并给出警告，而不是只生效一半。
-
-skill 使用统计同样读取记录的根目录，迁移后的工具的 skills 也算作已安装；`import --from-claude` 读取迁移后的 Claude Code 的 rules。
-
-`toolRoots` 目前只对 `claude` 和 `codex` 生效，其他工具 id 都会被拒绝并给出警告。只有当一个工具在用户级的所有写入都经过 `toolPaths` 时，为它指定根目录才是可靠的；其余工具都还有 teamai 另行解析的写入位置——OMP 的扩展目录、Cursor 的 co-author 文件、OpenCode 的插件目录——只迁移它们的 `toolPaths` 会把其余部分留在原处。Copilot CLI 有自己的机制：设置 `COPILOT_HOME`。
-
-如果你在初始化之后才设置或修改 `CLAUDE_CONFIG_DIR` 或 `CODEX_HOME`，`teamai doctor` 会报出来：`Claude Code root matches CLAUDE_CONFIG_DIR` 与 `Codex root matches CODEX_HOME` 这两项检查（各自仅在当前配置会同步对应工具时出现）会比对该变量与当前配置实际同步到的根目录，并提示重新执行 `teamai init`；若该值是 teamai 无法同步到的目录，则说明原因。未设置该变量时，对应检查不会出现在报告里。
+目录要在 home 下（`~/.claude-work`），或在 `~/.config/` 下面。Copilot 用自己的 `COPILOT_HOME`。改了环境变量之后 `teamai doctor` 会对不上，按它的提示再跑一次 `init`。
 
 ### Webhook 通知（`sharing.webhooks`）
 

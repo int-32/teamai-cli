@@ -49,6 +49,22 @@ sharing:
 
 A rule you wrote yourself stays. `push` writes back only the body of a rule the team already has.
 
+## Agents
+
+`agents/<name>.yaml`. `name` matches the filename. Commit it, or run `teamai push` after editing the copy in a tool.
+
+```yaml
+# agents/code-reviewer.yaml
+name: code-reviewer
+description: Review a change before it is pushed
+instructions: |
+  Read the diff and comment on correctness, tests, and risks.
+tools: [Read, Grep]
+targets: [claude, cursor]
+```
+
+An agent for one role goes in `agents/<namespace>/`, and that namespace is listed in the role's `resources.agents`.
+
 ## Env, hooks and MCP servers by namespace
 
 The root file reaches everyone. A namespace declared under `resources:` reaches only members who have it active, and replaces the root entry of the same name.
@@ -100,17 +116,22 @@ teamai env set GITHUB_TOKEN
 teamai env exec -- gh pr create
 ```
 
-## Docs
+## Hooks
 
-Put files in the team repo's `docs/`. Members receive them on `pull`. To limit a directory, declare it under `resources.docs`:
+Commit `hooks/hooks.yaml` yourself. `builtin` belongs only in this root file.
 
 ```yaml
-# manifest/projects.yaml
-projects:
-  - id: checkout
-    resources:
-      docs: [checkout]
+hooks:
+  - id: block-secret
+    description: Scan for secrets before a commit
+    event: PreToolUse
+    matcher: Bash
+    command: bash ~/.teamai/team-scripts/scan-secret.sh
+    timeout: 15
+    tools: [claude, cursor]
 ```
+
+A hook for one project goes in `hooks/<ns>/hooks.yaml`.
 
 ## MCP servers
 
@@ -140,4 +161,16 @@ Write secrets as `${VAR}` and declare the key in `env/secrets.yaml`. A server fo
 teamai mcp list
 teamai mcp inject
 teamai mcp remove
+```
+
+## Docs
+
+Put files in the team repo's `docs/`. Members receive them on `pull`. To limit a directory, declare it under `resources.docs`:
+
+```yaml
+# manifest/projects.yaml
+projects:
+  - id: checkout
+    resources:
+      docs: [checkout]
 ```
