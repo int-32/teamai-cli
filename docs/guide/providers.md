@@ -9,11 +9,11 @@ TeamAI CLI talks to Git hosting platforms through a provider layer. Six provider
 | Provider | Host | Authentication | Suggested for |
 |----------|------|----------------|---------------|
 | `github` | github.com | `gh` CLI or the `GITHUB_TOKEN` environment variable | Open source projects, external users |
-| `tgit` | git.woa.com | `gf` CLI (downloaded automatically) + `~/.netrc` | Tencent internal teams |
 | `cnb` | cnb.cool | `cnb login` or the `CNB_TOKEN` environment variable | CNB (Cloud Native Build) users |
 | `gitlab` | gitlab.com or a self-hosted instance | `GITLAB_TOKEN` environment variable | GitLab, including enterprise self-hosted |
 | `gitcode` | gitcode.com | `GITCODE_TOKEN` environment variable, or paste a token during init | GitCode (CSDN) users |
 | `git` | any Git host | The system Git credential helper or an SSH key | Self-hosted Gitea and other platforms |
+| `tgit` | git.woa.com | `gf` CLI (downloaded automatically) + `~/.netrc` | Tencent internal teams |
 
 ## Provider auto-detection
 
