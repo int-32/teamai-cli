@@ -2,7 +2,130 @@
 
 > Part of the [TeamAI CLI Usage Guide](../usage-guide.md).
 
----
+Joining a repo that already exists is [Join a team](./getting-started.md#join-a-team).
+
+## Scope
+
+This project:
+
+```bash
+cd /path/to/my-project
+teamai init https://github.com/your-org/platform-teamai
+```
+
+This machine:
+
+```bash
+teamai init https://github.com/your-org/platform-teamai --scope user
+```
+
+Company files in `~/`, this service in the project:
+
+```bash
+teamai init https://github.com/your-org/engineering-practices --scope user
+cd /path/to/java-service
+teamai init https://github.com/your-org/java-service-teamai --inherit-user-scope
+```
+
+This repo is the team repo:
+
+```bash
+cd /path/to/my-project
+teamai init . --agent claude,cursor
+```
+
+## Repo
+
+`init` writes `teamai.yaml`. A separate team repo keeps it at the repo root. When this repo is the team repo, the file is `.teamai/teamai.yaml` and includes `mode: self`.
+
+```yaml
+team: platform
+description: Platform team AI resources
+repo: https://github.com/your-org/platform-teamai.git
+provider: github
+sharing:
+  docs:
+    localDir: ./.teamai/docs
+  env:
+    injectShellProfile: true
+```
+
+`init .` also creates this layout on the current branch:
+
+```text
+.teamai/teamai.yaml
+.teamai/skills/
+.teamai/rules/
+.teamai/docs/
+.teamai/env/env.yaml
+.teamai/mcp/mcp.yaml
+```
+
+`teamai push` sends skills and rules. Commit `docs/`, `hooks/hooks.yaml`, `mcp/mcp.yaml`, and `models/models.yaml` yourself.
+
+### Git permissions
+
+Teammates push branches and open pull requests. The default branch stays protected.
+
+## Roles and projects
+
+A role is a member's job, such as frontend. Someone who sets that role receives the resources the role lists.
+
+A project is the service they are working on. After this directory is set to that project, it also receives the resources the project lists.
+
+`knowledge` covers rules and shared instructions (`claudemd/`). A project can also declare learnings, env, hooks, mcp, models, docs, and wiki on its own.
+
+```yaml
+# manifest/roles.yaml
+version: 1
+roles:
+  - id: frontend
+    description: Web engineers
+    resources:
+      knowledge: [common, frontend]  # rules/<ns>/, claudemd/<ns>/
+      skills: [common, frontend]
+      agents: [common, frontend]
+```
+
+```yaml
+# manifest/projects.yaml
+version: 1
+projects:
+  - id: checkout
+    name: Checkout service
+    resources:
+      knowledge: [checkout]   # rules/checkout/, claudemd/checkout/
+      skills: [checkout]
+      learnings: [checkout]
+      agents: [checkout]
+      env: [checkout]          # env/checkout/env.yaml
+      hooks: [checkout]        # hooks/checkout/hooks.yaml
+      mcp: [checkout]          # mcp/checkout/mcp.yaml
+      models: [checkout]       # models/checkout/models.yaml
+      docs: [checkout]         # docs/checkout/
+      wiki: [checkout]         # codebase slug, evidence/code/checkout/
+```
+
+```text
+rules/common/code-style.md
+claudemd/frontend/api.md
+skills/frontend/react-patterns/SKILL.md
+agents/frontend/reviewer.yaml
+learnings/checkout/
+env/checkout/env.yaml
+hooks/checkout/hooks.yaml
+mcp/checkout/mcp.yaml
+models/checkout/models.yaml
+docs/checkout/
+```
+
+Commit both files. In the project:
+
+```bash
+teamai roles set frontend
+teamai projects set checkout
+teamai pull
+```
 
 ## Skills
 
@@ -63,7 +186,30 @@ tools: [Read, Grep]
 targets: [claude, cursor]
 ```
 
-An agent for one role goes in `agents/<namespace>/`, and that namespace is listed in the role's `resources.agents`.
+Leave `targets` out to send the agent to every installed tool. An agent for one role goes in `agents/<namespace>/`, declared under `resources.agents`.
+
+```bash
+teamai push
+teamai push --role frontend
+teamai remove agents code-reviewer
+```
+
+`pull` writes each tool's own format into that tool's agents directory: `<name>.toml` for the Codex family, `<name>.agent.md` for Copilot, `<name>.json` for Kiro, and `<name>.md` for the rest.
+
+### Model aliases
+
+A name such as `model: strong` is mapped per tool in `models/aliases.yaml`:
+
+```yaml
+aliases:
+  strong:
+    claude: { model: opus, effort: high }
+    codex: { model: gpt-6-sol, effort: high }
+  fast:
+    claude: haiku
+```
+
+An alias starts with a lowercase letter, then lowercase letters, digits, or `-`. A namespace that needs its own mapping uses `models/<ns>/aliases.yaml`.
 
 ## Env, hooks and MCP servers by namespace
 
@@ -118,7 +264,25 @@ teamai env exec -- gh pr create
 
 ## Hooks
 
-Commit `hooks/hooks.yaml` yourself. `builtin` belongs only in this root file.
+`teamai init` installs these built-in hooks:
+
+| Event | What it does |
+|-------|----------------|
+| `SessionStart` | Pull team resources and record the session start |
+| `PostToolUse` | Record skill use |
+| `UserPromptSubmit` | Record the prompt |
+| `Stop` | Check for a CLI update and record the session end |
+
+```bash
+teamai hooks list
+teamai hooks inject --dry-run
+teamai hooks inject
+teamai hooks remove
+```
+
+Only tools that are already installed are touched.
+
+Commit the team's own hooks in `hooks/hooks.yaml`. `id` is lowercase letters, digits, and `-`. `builtin` belongs only in the root file. Use it to turn a built-in hook off, or to change its timeout.
 
 ```yaml
 hooks:
@@ -132,6 +296,15 @@ hooks:
 ```
 
 A hook for one project goes in `hooks/<ns>/hooks.yaml`.
+
+```yaml
+sharing:
+  hooks:
+    autoApply: false          # pull only prints a hint; run teamai hooks inject
+    requireTeamScripts: true  # command must live under ~/.teamai/team-scripts/
+```
+
+Turn team hooks off on this machine with `TEAMAI_HOOKS_DISABLED=1`.
 
 ## MCP servers
 
@@ -162,6 +335,50 @@ teamai mcp list
 teamai mcp inject
 teamai mcp remove
 ```
+
+## Models
+
+Commit `models/models.yaml` yourself. The key stays on each machine. A catalog for one project goes in `models/<ns>/models.yaml`.
+
+```yaml
+profiles:
+  - id: tokenhub
+    name: Tencent TokenHub
+    base_url: https://tokenhub.tencentmaas.com
+    api_key: ${API_KEY}
+    model_groups:
+      - protocols: [anthropic, openai-chat-completions]
+        models:
+          - glm-5.3
+          - deepseek-v4-flash
+```
+
+```bash
+teamai models switch tokenhub
+```
+
+## Packages
+
+```bash
+teamai packages install typescript
+teamai packages install code-review@claude-plugins-official
+teamai push
+```
+
+```yaml
+packages:
+  npm:
+    - name: typescript
+      version: "*"
+  claude:
+    marketplaces:
+      - name: claude-plugins-official
+        repo: anthropics/claude-plugins-official
+    plugins:
+      - name: code-review@claude-plugins-official
+```
+
+After pull, run `teamai packages`.
 
 ## Docs
 

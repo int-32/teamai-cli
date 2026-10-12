@@ -104,7 +104,7 @@ TeamAI detects the default branch with `getDefaultBranch()`: `origin/HEAD` first
 
 ### Branch permission
 
-Teammates need permission to push branches and to open pull requests. Leave the default branch protected. Reports and learnings use `teamai-reports` and `teamai-learnings`. See [Git permissions](admin-setup.md#git-permissions).
+Teammates need permission to push branches and to open pull requests. Leave the default branch protected. Reports and learnings use `teamai-reports` and `teamai-learnings`. See [Git permissions](sharing.md#git-permissions).
 
 ## TGit provider (Tencent Gongfeng)
 

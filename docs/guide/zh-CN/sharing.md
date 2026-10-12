@@ -2,7 +2,130 @@
 
 > 本文是 [TeamAI CLI 使用指南](../../usage-guide.zh-CN.md) 的一部分。
 
----
+加入已有仓库，看[加入团队](./getting-started.md#加入团队)。
+
+## 安装范围
+
+只进当前项目：
+
+```bash
+cd /path/to/my-project
+teamai init https://github.com/your-org/platform-teamai
+```
+
+这台机器上的每个项目：
+
+```bash
+teamai init https://github.com/your-org/platform-teamai --scope user
+```
+
+公司级文件在 `~/`，这个服务的文件在项目里：
+
+```bash
+teamai init https://github.com/your-org/engineering-practices --scope user
+cd /path/to/java-service
+teamai init https://github.com/your-org/java-service-teamai --inherit-user-scope
+```
+
+业务仓库自己就是团队仓库：
+
+```bash
+cd /path/to/my-project
+teamai init . --agent claude,cursor
+```
+
+## 仓库
+
+`init` 会写 `teamai.yaml`。独立团队仓库放在仓库根目录。业务仓库自己当团队仓库时，文件是 `.teamai/teamai.yaml`，并带 `mode: self`。
+
+```yaml
+team: platform
+description: Platform team AI resources
+repo: https://github.com/your-org/platform-teamai.git
+provider: github
+sharing:
+  docs:
+    localDir: ./.teamai/docs
+  env:
+    injectShellProfile: true
+```
+
+`init .` 还会在当前分支建出这些目录：
+
+```text
+.teamai/teamai.yaml
+.teamai/skills/
+.teamai/rules/
+.teamai/docs/
+.teamai/env/env.yaml
+.teamai/mcp/mcp.yaml
+```
+
+skill 和 rule 用 `teamai push`。`docs/`、`hooks/hooks.yaml`、`mcp/mcp.yaml`、`models/models.yaml` 自己 commit。
+
+### Git 权限
+
+同事能推分支、能开 pull request。主干保持保护。
+
+## 角色和项目
+
+角色是成员的分工，比如前端。设成这个角色的人，会收到角色上声明的资源。
+
+项目是正在做的服务。在当前目录设成这个项目后，会再收到项目上声明的资源。
+
+`knowledge` 包含 rules 和共享指令（`claudemd/`）。项目还可以单独声明 learnings、env、hooks、mcp、models、docs、wiki。
+
+```yaml
+# manifest/roles.yaml
+version: 1
+roles:
+  - id: frontend
+    description: Web engineers
+    resources:
+      knowledge: [common, frontend]  # rules/<ns>/、claudemd/<ns>/
+      skills: [common, frontend]
+      agents: [common, frontend]
+```
+
+```yaml
+# manifest/projects.yaml
+version: 1
+projects:
+  - id: checkout
+    name: Checkout service
+    resources:
+      knowledge: [checkout]   # rules/checkout/、claudemd/checkout/
+      skills: [checkout]
+      learnings: [checkout]
+      agents: [checkout]
+      env: [checkout]          # env/checkout/env.yaml
+      hooks: [checkout]        # hooks/checkout/hooks.yaml
+      mcp: [checkout]          # mcp/checkout/mcp.yaml
+      models: [checkout]       # models/checkout/models.yaml
+      docs: [checkout]         # docs/checkout/
+      wiki: [checkout]         # 代码库 slug，evidence/code/checkout/
+```
+
+```text
+rules/common/code-style.md
+claudemd/frontend/api.md
+skills/frontend/react-patterns/SKILL.md
+agents/frontend/reviewer.yaml
+learnings/checkout/
+env/checkout/env.yaml
+hooks/checkout/hooks.yaml
+mcp/checkout/mcp.yaml
+models/checkout/models.yaml
+docs/checkout/
+```
+
+把这两份文件提交。在项目里：
+
+```bash
+teamai roles set frontend
+teamai projects set checkout
+teamai pull
+```
 
 ## Skills
 
@@ -63,7 +186,30 @@ tools: [Read, Grep]
 targets: [claude, cursor]
 ```
 
-只给一个角色时放到 `agents/<namespace>/`，并在该角色的 `resources.agents` 里声明这个 namespace。
+`targets` 不写就发给所有已安装的工具。只给一个角色时放到 `agents/<namespace>/`，并在 `resources.agents` 里声明。
+
+```bash
+teamai push
+teamai push --role frontend
+teamai remove agents code-reviewer
+```
+
+`pull` 按工具自己的格式写入它的 agents 目录：Codex 系列是 `<name>.toml`，Copilot 是 `<name>.agent.md`，Kiro 是 `<name>.json`，其余是 `<name>.md`。
+
+### 模型别名
+
+`model: strong` 这类名字在 `models/aliases.yaml` 里按工具对应到具体模型：
+
+```yaml
+aliases:
+  strong:
+    claude: { model: opus, effort: high }
+    codex: { model: gpt-6-sol, effort: high }
+  fast:
+    claude: haiku
+```
+
+别名以小写字母开头，后面可以是小写字母、数字或 `-`。某个 namespace 要换一套时，写 `models/<ns>/aliases.yaml`。
 
 ## Env、hooks 与 MCP server 按 namespace 划分
 
@@ -118,7 +264,25 @@ teamai env exec -- gh pr create
 
 ## Hooks
 
-`hooks/hooks.yaml` 自己 commit。`builtin` 只写在这个根文件里。
+`teamai init` 会装上这些内置 hook：
+
+| 事件 | 做什么 |
+|------|--------|
+| `SessionStart` | 拉取团队资源，并记下会话开始 |
+| `PostToolUse` | 记录 skill 使用 |
+| `UserPromptSubmit` | 记录输入 |
+| `Stop` | 检查 CLI 更新，并记下会话结束 |
+
+```bash
+teamai hooks list
+teamai hooks inject --dry-run
+teamai hooks inject
+teamai hooks remove
+```
+
+只处理已经安装的工具。
+
+团队自己的 hook 写在 `hooks/hooks.yaml`，自己 commit。`id` 只用小写字母、数字和 `-`。`builtin` 只放在根文件里，用来关掉某条内置 hook，或改它的超时。
 
 ```yaml
 hooks:
@@ -132,6 +296,15 @@ hooks:
 ```
 
 只给一个项目时写到 `hooks/<ns>/hooks.yaml`。
+
+```yaml
+sharing:
+  hooks:
+    autoApply: false          # pull 只提示，要自己跑 teamai hooks inject
+    requireTeamScripts: true  # command 必须在 ~/.teamai/team-scripts/ 下
+```
+
+本机全部停用团队 hook：`TEAMAI_HOOKS_DISABLED=1`。
 
 ## MCP Server
 
@@ -162,6 +335,50 @@ teamai mcp list
 teamai mcp inject
 teamai mcp remove
 ```
+
+## 模型
+
+`models/models.yaml` 自己 commit。密钥留在每人自己的机器上。只给一个项目时写 `models/<ns>/models.yaml`。
+
+```yaml
+profiles:
+  - id: tokenhub
+    name: Tencent TokenHub
+    base_url: https://tokenhub.tencentmaas.com
+    api_key: ${API_KEY}
+    model_groups:
+      - protocols: [anthropic, openai-chat-completions]
+        models:
+          - glm-5.3
+          - deepseek-v4-flash
+```
+
+```bash
+teamai models switch tokenhub
+```
+
+## 团队包
+
+```bash
+teamai packages install typescript
+teamai packages install code-review@claude-plugins-official
+teamai push
+```
+
+```yaml
+packages:
+  npm:
+    - name: typescript
+      version: "*"
+  claude:
+    marketplaces:
+      - name: claude-plugins-official
+        repo: anthropics/claude-plugins-official
+    plugins:
+      - name: code-review@claude-plugins-official
+```
+
+pull 之后跑 `teamai packages`。
 
 ## Docs（文档）
 

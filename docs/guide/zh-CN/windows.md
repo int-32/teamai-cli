@@ -24,7 +24,7 @@ teamai hooks list                   # 各工具的内置钩子集合
 & "C:\Program Files\Git\bin\bash.exe" -lc "teamai hook-dispatch session-start --tool claude 2>/dev/null"; $LASTEXITCODE
 ```
 
-各工具的钩子集合和每个事件的作用见[使用指南](hooks.md#hooks)。
+每个事件做什么，见[共享团队资源](sharing.md#hooks)。
 
 ## 钩子仍不触发
 

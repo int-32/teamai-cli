@@ -91,7 +91,7 @@ teamai roles set hai
 teamai pull
 ```
 
-角色怎么定义，见[配置示例](./admin-setup.md#角色和项目)。
+角色怎么定义，见[共享团队资源](./sharing.md#角色和项目)。
 
 ### 标签订阅
 

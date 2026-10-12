@@ -91,7 +91,7 @@ teamai roles set hai
 teamai pull
 ```
 
-How roles are defined: [Setup demos](./admin-setup.md#roles-and-projects).
+How roles are defined: [Sharing Team Resources](./sharing.md#roles-and-projects).
 
 ### Tag subscriptions
 

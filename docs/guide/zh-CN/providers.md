@@ -105,7 +105,7 @@ TeamAI 通过 `getDefaultBranch()` 自动识别默认分支：先看 `origin/HEA
 
 ### 分支权限
 
-同事有分支写权限、能开 pull request 就够了。主干保持保护。上报和学习记录走 `teamai-reports` 和 `teamai-learnings`。详见[Git 权限](admin-setup.md#git-权限)。
+同事有分支写权限、能开 pull request 就够了。主干保持保护。上报和学习记录走 `teamai-reports` 和 `teamai-learnings`。详见[Git 权限](sharing.md#git-权限)。
 
 ## TGit Provider（腾讯工蜂）
 

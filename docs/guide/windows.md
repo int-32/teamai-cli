@@ -27,7 +27,7 @@ teamai hooks list                   # the built-in hook set per tool
 & "C:\Program Files\Git\bin\bash.exe" -lc "teamai hook-dispatch session-start --tool claude 2>/dev/null"; $LASTEXITCODE
 ```
 
-The hook set per tool, and what each event does, is in the [Usage Guide](hooks.md#hooks).
+What each event does is in [Sharing Team Resources](sharing.md#hooks).
 
 ## If hooks still do not fire
 

@@ -31,7 +31,7 @@
 4. Publish one file so the first pull is not empty. Put a skill in `~/.claude/skills/<name>/SKILL.md` (or a rule in `~/.claude/rules/<name>.md`) and run `teamai push`. Merge the pull request it opens.
 5. Send the repo URL to the team.
 
-More management features are in [Setup demos](./admin-setup.md).
+More management features are in [Sharing Team Resources](./sharing.md).
 
 ### Join a team
 
@@ -89,5 +89,5 @@ Run `teamai doctor`. It names a missing hook, a tool it did not detect, or a tok
 
 | Next | Read |
 | --- | --- |
-| More management features | [Setup demos](./admin-setup.md) |
+| More management features | [Sharing Team Resources](./sharing.md) |
 | After you have joined | [Member Guide](./member-guide.md) |
